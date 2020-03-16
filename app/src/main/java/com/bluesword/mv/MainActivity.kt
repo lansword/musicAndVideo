@@ -18,6 +18,7 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
+    val permissionList = ArrayList<String>()
     var PATH_NAME: File? = null
     /**
      * 是否正在录音
@@ -29,7 +30,10 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestAllPermission()
+
         setContentView(R.layout.activity_main)
+
         PATH_NAME = File(FileUtils.getCacheDirectory(this, null), "haha.mp3")
 
 
@@ -61,12 +65,41 @@ class MainActivity : AppCompatActivity() {
 
 
         btn_mediaRecorder.setOnClickListener {
-            requestPermission()
+            recordAudio()
         }
 
 
         btn_play.setOnClickListener {
             play()
+        }
+
+        btn_open_camera.setOnClickListener {
+
+        }
+
+    }
+
+    /**
+     * 申请所有权限
+     */
+    private fun requestAllPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissionList.add(Manifest.permission.RECORD_AUDIO)
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissionList.add(Manifest.permission.CAMERA)
+        }
+
+        if (permissionList.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                permissionList.toTypedArray(), 100
+            )
         }
 
     }
@@ -90,27 +123,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    /**
-     * 申请权限
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun requestPermission() {
-        //1. 检测APP是否在manifest中声明了该权限
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            //2.checkSelfPermission方法返回值不是PERMISSION_GRANTED，权限没有开启，请求权限
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO), 100
-            )
-        } else {
-            //权限已经开启
-            recordAudio()
-        }
-    }
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>,
@@ -119,13 +131,14 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 100) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                //权限被用户同意
-
-                recordAudio()
-            } else {
-                //权限被用户拒绝
+            if (grantResults.isNotEmpty()) {
+                grantResults.forEach {
+                    if (it != PackageManager.PERMISSION_GRANTED) {
+                        finish()
+                    }
+                }
             }
+
         }
 
     }
